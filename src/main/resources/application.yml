@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: Finova Digital Banking Wallet platform
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/finova_db
+    username: johnson
+    password: johnson.123
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database: POSTGRESQL
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  mail:
+    host: smtp.hostinger.com
+    port: 465
+    username: support@ibeacon.org
+    password: G9jIBHQHnNlea2PJ@
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: 8080
+
+jwt:
+  secretKey: VGhpc0lzQVN1cGVyU2VjdXJlSldUU2VjcmV0S2V5Rm9yQmFua2luZw==
+  expiration: 3600000
+  refresh-expiration: 604800000
+
+app:
+  frontend-url: http://localhost:3000
