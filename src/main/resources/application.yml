@@ -37,3 +37,7 @@ jwt:
 
 app:
   frontend-url: http://localhost:3000
+
+service:
+  customer-service:
+    secret: my-finova-customer-service-secret-2025-very-long-key

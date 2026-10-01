@@ -8,9 +8,7 @@ import com.finova.beneficiary.model.Beneficiary;
 import com.finova.beneficiary.repository.BeneficiaryRepository;
 import com.finova.common.exception.InsufficientBalanceException;
 import com.finova.common.exception.ResourceNotFoundException;
-import com.finova.transaction.dto.StatementResponse;
-import com.finova.transaction.dto.TransactionRequest;
-import com.finova.transaction.dto.TransactionResponse;
+import com.finova.transaction.dto.*;
 import com.finova.transaction.mapper.TransactionMapper;
 import com.finova.transaction.model.Transaction;
 import com.finova.transaction.referenceGenerator.TransactionReferenceGenerator;
@@ -45,7 +43,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
-    public TransactionResponse deposit(TransactionRequest request) {
+    public TransactionResponse deposit(DepositRequest request) {
 
         // Get authenticated user
         User user = getAuthenticatedUser.getAuthenticatedUser();
@@ -100,7 +98,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
-    public TransactionResponse withdraw(TransactionRequest request) {
+    public TransactionResponse withdraw(WithdrawRequest request) {
 
         // Get authenticated user
         User user = getAuthenticatedUser.getAuthenticatedUser();
@@ -182,7 +180,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
-    public TransactionResponse transfer(TransactionRequest request) {
+    public TransactionResponse transfer(TransferRequest request) {
 
         User user = getAuthenticatedUser.getAuthenticatedUser();
 
@@ -193,15 +191,7 @@ public class TransactionServiceImpl implements TransactionService {
             );
         }
 
-        // 2. Validate counterparty account number
-        if (request.getBeneficiaryId() == null) {
-
-            throw new IllegalArgumentException(
-                    "Beneficiary is required for transfers"
-            );
-        }
-
-        // 3. Find sender's account
+        // 2. Find sender's account
         Account sourceAccount = accountRepository
                 .findByIdAndUser(request.getAccountId(), user)
                 .orElseThrow(() ->
@@ -212,52 +202,91 @@ public class TransactionServiceImpl implements TransactionService {
                         )
                 );
 
-        // validate sender account
-        validateAccountForTransaction.validateAccountForTransaction(sourceAccount);
+        // Validate sender account
+        validateAccountForTransaction
+                .validateAccountForTransaction(sourceAccount);
 
-        // 4. Find receiver's account BY ACCOUNT NUMBER
 
-        Beneficiary beneficiary = beneficiaryRepository
-                .findByIdAndUser(
-                        request.getBeneficiaryId(),
-                        user
-                ).orElseThrow(
-                        () -> new ResourceNotFoundException(
-                                "Beneficiary", "id",
-                                request.getBeneficiaryId().toString()
-                        )
-                );
+        // 3. Determine destination account number
+        String destinationAccountNumber;
+
+        if (request.getBeneficiaryId() != null) {
+
+            // Transfer using saved beneficiary
+            Beneficiary beneficiary = beneficiaryRepository
+                    .findByIdAndUser(
+                            request.getBeneficiaryId(),
+                            user
+                    )
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException(
+                                    "Beneficiary",
+                                    "id",
+                                    request.getBeneficiaryId().toString()
+                            )
+                    );
+
+            destinationAccountNumber = beneficiary.getAccountNumber();
+
+        } else if (request.getDestinationAccountNumber() != null
+                && !request.getDestinationAccountNumber().isBlank()) {
+
+            // Direct transfer using account number
+            destinationAccountNumber =
+                    request.getDestinationAccountNumber();
+
+        } else {
+
+            throw new IllegalArgumentException(
+                    "Either beneficiaryId or destinationAccountNumber is required"
+            );
+        }
+
+
+        // 4. Find receiver's account by account number
         Account counterpartyAccount = accountRepository
-                .findByAccountNumber(beneficiary.getAccountNumber())
+                .findByAccountNumber(destinationAccountNumber)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Account",
                                 "account number",
-                                beneficiary.getAccountNumber()
+                                destinationAccountNumber
                         )
                 );
 
-        // validat receiver account
-        validateAccountForTransaction.validateAccountForTransaction(counterpartyAccount);
+        // Validate receiver account
+        validateAccountForTransaction
+                .validateAccountForTransaction(counterpartyAccount);
+
 
         // 5. Don't allow transfer to yourself
-        if (sourceAccount.getId().equals(counterpartyAccount.getId())) {
+        if (sourceAccount.getId()
+                .equals(counterpartyAccount.getId())) {
+
             throw new IllegalArgumentException(
                     "You cannot transfer money to your own account"
             );
         }
 
-        // 8. Check balance
+        //
+        if (!sourceAccount.getCurrency().equals(counterpartyAccount.getCurrency())) {
+            throw new IllegalArgumentException("Cannot transfer between accounts with different currencies");
+        }
+
+
+        // 6. Check balance
         BigDecimal sourceBalanceBefore =
                 sourceAccount.getBalance();
 
         if (sourceBalanceBefore.compareTo(request.getAmount()) < 0) {
+
             throw new InsufficientBalanceException(
                     "Insufficient balance for this transfer"
             );
         }
 
-        // 9. Calculate balances
+
+        // 7. Calculate balances
         BigDecimal sourceBalanceAfter =
                 sourceBalanceBefore.subtract(request.getAmount());
 
@@ -267,14 +296,16 @@ public class TransactionServiceImpl implements TransactionService {
         BigDecimal destinationBalanceAfter =
                 destinationBalanceBefore.add(request.getAmount());
 
-        // 10. Update balances
+
+        // 8. Update balances
         sourceAccount.setBalance(sourceBalanceAfter);
         counterpartyAccount.setBalance(destinationBalanceAfter);
 
         accountRepository.save(sourceAccount);
         accountRepository.save(counterpartyAccount);
 
-        // 11. Create sender transaction
+
+        // 9. Create sender transaction
         Transaction sourceTransaction = Transaction.builder()
                 .reference(TransactionReferenceGenerator.generate())
                 .account(sourceAccount)
@@ -287,7 +318,8 @@ public class TransactionServiceImpl implements TransactionService {
                 .description(request.getDescription())
                 .build();
 
-        // 12. Create receiver transaction
+
+        // 10. Create receiver transaction
         Transaction destinationTransaction = Transaction.builder()
                 .reference(TransactionReferenceGenerator.generate())
                 .account(counterpartyAccount)
@@ -303,9 +335,13 @@ public class TransactionServiceImpl implements TransactionService {
                 )
                 .build();
 
+
+        // 11. Save transactions
         transactionRepository.save(sourceTransaction);
         transactionRepository.save(destinationTransaction);
 
+
+        // 12. Return sender transaction
         return transactionMapper.mapToResponse(sourceTransaction);
     }
 

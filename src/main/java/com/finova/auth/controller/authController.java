@@ -131,7 +131,7 @@ public class authController {
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         true,
-                        "Logout scuccessfl",
+                        "Logout successful",
                         null
                 )
         );

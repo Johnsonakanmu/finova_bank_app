@@ -1,9 +1,7 @@
 package com.finova.transaction.controller;
 
 import com.finova.apiResponse.ApiResponse;
-import com.finova.transaction.dto.StatementResponse;
-import com.finova.transaction.dto.TransactionRequest;
-import com.finova.transaction.dto.TransactionResponse;
+import com.finova.transaction.dto.*;
 import com.finova.transaction.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,7 +38,7 @@ public class TransactionController {
 
     @PostMapping("/deposit")
     public ResponseEntity<ApiResponse<TransactionResponse>> deposit(
-            @Valid @RequestBody TransactionRequest request
+            @Valid @RequestBody DepositRequest request
     ) {
 
         TransactionResponse response =
@@ -67,7 +65,7 @@ public class TransactionController {
     )
     @PostMapping("/withdraw")
     public ResponseEntity<ApiResponse<TransactionResponse>> withdraw(
-            @Valid @RequestBody TransactionRequest request
+            @Valid @RequestBody WithdrawRequest request
     ) {
 
         TransactionResponse response =
@@ -95,7 +93,7 @@ public class TransactionController {
 
     @PostMapping("/transfer")
     public ResponseEntity<ApiResponse<TransactionResponse>> transfer(
-            @Valid @RequestBody TransactionRequest request
+            @Valid @RequestBody TransferRequest request
     ) {
 
         TransactionResponse response =

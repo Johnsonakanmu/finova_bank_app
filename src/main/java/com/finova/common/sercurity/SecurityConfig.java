@@ -2,6 +2,7 @@ package com.finova.common.sercurity;
 
 import com.finova.common.config.CustomUserDetailService;
 import com.finova.common.jwt.JwtAuthenticationFilter;
+import com.finova.config.security.ServiceAuthenticationFilter;
 import com.finova.user.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +28,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter authenticationFilter;
+    private final ServiceAuthenticationFilter serviceAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
@@ -42,6 +44,9 @@ public class SecurityConfig {
                                 "/v3/api-docs/**"
                         ).permitAll()
 
+                        .requestMatchers("/api/internal/**")
+                        .hasRole("SERVICE")
+
                         .requestMatchers(
                                 "/api/auth/register",
                                 "/api/auth/login",
@@ -49,13 +54,26 @@ public class SecurityConfig {
                                 "/api/auth/reset_password"
                         ).permitAll()
 
+                        .requestMatchers("/api/internal/**")
+                        .hasRole("SERVICE")
+
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider)
-                .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+                .authenticationProvider(
+                        authenticationProvider
+                )
+                .addFilterBefore(
+                        serviceAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
+
+                .addFilterBefore(authenticationFilter,
+                UsernamePasswordAuthenticationFilter.class
+        );
 
         return http.build();
     }
