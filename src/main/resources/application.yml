@@ -40,4 +40,4 @@ app:
 
 service:
   customer-service:
-    secret: my-finova-customer-service-secret-2025-very-long-key
+    secret: my-finova-customer-service-secret-2026-very-long-key-secure-384

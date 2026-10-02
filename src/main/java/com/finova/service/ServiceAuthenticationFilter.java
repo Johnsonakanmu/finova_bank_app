@@ -1,4 +1,4 @@
-package com.finova.config.security;
+package com.finova.service;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -16,15 +16,12 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class ServiceAuthenticationFilter
-        extends OncePerRequestFilter {
+public class ServiceAuthenticationFilter extends OncePerRequestFilter {
 
     private final ServiceTokenValidator serviceTokenValidator;
 
     @Override
-    protected boolean shouldNotFilter(
-            HttpServletRequest request
-    ) {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
 
         return !request.getServletPath()
                 .startsWith("/api/internal/");
@@ -43,7 +40,7 @@ public class ServiceAuthenticationFilter
         if (authorization == null
                 || !authorization.startsWith("Bearer ")) {
 
-            filterChain.doFilter(request, response);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
@@ -51,10 +48,7 @@ public class ServiceAuthenticationFilter
 
         if (!serviceTokenValidator.isValid(token)) {
 
-            response.setStatus(
-                    HttpServletResponse.SC_UNAUTHORIZED
-            );
-
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 

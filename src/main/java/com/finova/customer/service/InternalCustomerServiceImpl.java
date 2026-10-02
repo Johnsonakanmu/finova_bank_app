@@ -1,9 +1,11 @@
 package com.finova.customer.service;
 
 import com.finova.customer.dto.InternalCustomerResponse;
+import com.finova.customer.repository.UserRepositories;
+import com.finova.customer.specification.UserSpecification;
 import com.finova.user.model.User;
-import com.finova.user.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,17 +14,25 @@ import java.util.List;
 @AllArgsConstructor
 public class InternalCustomerServiceImpl implements InternalCustomerService{
 
-    private final UserRepository userRepository;
+    private UserRepositories userRepositories;
 
     @Override
-    public List<InternalCustomerResponse> searchCustomers(String firstName, String lastName,
-                                                          String email, String phoneNumber) {
-        List<User> users = userRepository.searchCustomers(
-                firstName,
-                lastName,
-                email,
-                phoneNumber
-        );
+    public List<InternalCustomerResponse> searchCustomers(
+            String firstName,
+            String lastName,
+            String email,
+            String phoneNumber
+    ) {
+
+        Specification<User> specification =
+                UserSpecification.searchCustomers(
+                        firstName,
+                        lastName,
+                        email,
+                        phoneNumber
+                );
+
+        List<User> users = userRepositories.findAll(specification);
 
         return users.stream()
                 .map(this::mapToResponse)
@@ -31,7 +41,15 @@ public class InternalCustomerServiceImpl implements InternalCustomerService{
 
     @Override
     public InternalCustomerResponse getCustomerById(Long id) {
-        return null;
+
+        User user = userRepositories.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Customer not found with id: " + id
+                        )
+                );
+
+        return mapToResponse(user);
     }
 
     private InternalCustomerResponse mapToResponse(User user) {
@@ -48,11 +66,4 @@ public class InternalCustomerServiceImpl implements InternalCustomerService{
                 .updatedAt(user.getUpdatedAt())
                 .build();
     }
-
-
 }
-
-
-
-
-

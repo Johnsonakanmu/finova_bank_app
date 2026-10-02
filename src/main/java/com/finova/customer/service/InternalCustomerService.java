@@ -6,12 +6,9 @@ import java.util.List;
 
 public interface InternalCustomerService {
 
-    List<InternalCustomerResponse> searchCustomers(
-            String firstName,
-            String lastName,
-            String email,
-            String phoneNumber
-    );
+    List<InternalCustomerResponse> searchCustomers(String firstName, String lastName,
+                                                   String email, String phoneNumber);
+
 
     InternalCustomerResponse getCustomerById(Long id);
 }

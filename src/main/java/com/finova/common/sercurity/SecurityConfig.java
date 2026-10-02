@@ -2,7 +2,7 @@ package com.finova.common.sercurity;
 
 import com.finova.common.config.CustomUserDetailService;
 import com.finova.common.jwt.JwtAuthenticationFilter;
-import com.finova.config.security.ServiceAuthenticationFilter;
+import com.finova.service.ServiceAuthenticationFilter;
 import com.finova.user.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;

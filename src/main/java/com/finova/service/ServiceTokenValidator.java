@@ -1,4 +1,4 @@
-package com.finova.config.security;
+package com.finova.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -33,18 +33,26 @@ public class ServiceTokenValidator {
                     .parseSignedClaims(token)
                     .getPayload();
 
-            return "customer-service".equals(
-                    claims.getSubject()
-            )
-                    && "customer-service".equals(
-                    claims.get("service", String.class)
-            )
-                    && "service".equals(
-                    claims.get("type", String.class)
+            System.out.println("SUBJECT: " + claims.getSubject());
+            System.out.println(
+                    "SERVICE: " + claims.get("service", String.class)
+            );
+            System.out.println(
+                    "TYPE: " + claims.get("type", String.class)
             );
 
+            return "customer-service".equals(claims.getSubject())
+                    && "customer-service".equals(
+                    claims.get("service", String.class))
+                    && "service".equals(
+                    claims.get("type", String.class));
+
         } catch (Exception e) {
+
+            e.printStackTrace();
+
             return false;
         }
+
     }
 }
